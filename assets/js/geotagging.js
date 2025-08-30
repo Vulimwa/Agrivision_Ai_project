@@ -137,12 +137,17 @@ function renderOutbreaksList(outbreaks) {
  * Should return a Promise that resolves to an array of outbreak objects.
  */
 async function fetchOutbreaks() {
-  // TODO: Replace this sample data with a real backend call
-  // Example: return fetch('/api/outbreaks').then(res => res.json());
-  return [
-    { id: '1', location: 'Field A', coords: '36.8,-1.29', diseaseType: 'Maize Rust', severity: 'high', date: '2025-08-25', notes: 'Spotted near river.' },
-    { id: '2', location: 'Field B', coords: '36.9,-1.30', diseaseType: 'Blight', severity: 'medium', date: '2025-08-26', notes: 'Early signs.' },
-  ];
+  // TODO: Set your backend API endpoint here
+  const API_URL = '/api/outbreaks';
+  try {
+    const res = await fetch(API_URL, { method: 'GET' });
+    if (!res.ok) throw new Error('Failed to fetch outbreaks');
+    return await res.json();
+  } catch (err) {
+    console.error('[Geotagging] Could not fetch outbreaks:', err);
+    // Fallback: return empty array or mock data
+    return [];
+  }
 }
 
 // Holds the current list of outbreaks in memory
@@ -205,28 +210,38 @@ function showAddOutbreakForm(coords) {
       </div>
     </div>
   `;
-  document.getElementById('addOutbreakForm').onsubmit = function(e) {
+  document.getElementById('addOutbreakForm').onsubmit = async function(e) {
     e.preventDefault();
-    // Backend: Save outbreak to DB, including image
     const form = e.target;
     const data = {
-      id: Date.now().toString(),
       coords: form.coords.value,
       location: `(${form.coords.value})`,
       diseaseType: form.disease.value,
       severity: form.severity.value,
       notes: form.notes.value,
       date: new Date().toISOString().slice(0,10),
-      // Backend: handle image upload
+      // Optionally handle image upload here
     };
-    // --- BACKEND INTEGRATION: Save new outbreak to backend here ---
-    // Example: await fetch('/api/outbreaks', { method: 'POST', body: JSON.stringify(data) })
-    // For now, just update local list:
-    addOutbreakMarker(data);
-    outbreaks.unshift(data);
-    renderOutbreaksList(outbreaks);
-    document.getElementById('modal-container').innerHTML = '';
-    showNotification('New outbreak added!');
+    // --- BACKEND INTEGRATION: Save new outbreak to backend ---
+    // TODO: Set your backend API endpoint here
+    const API_URL = '/api/outbreaks';
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) throw new Error('Failed to save outbreak');
+      const saved = await res.json();
+      addOutbreakMarker(saved);
+      outbreaks.unshift(saved);
+      renderOutbreaksList(outbreaks);
+      document.getElementById('modal-container').innerHTML = '';
+      showNotification('New outbreak added!');
+    } catch (err) {
+      showNotification('Failed to save outbreak.');
+      console.error('[Geotagging] Failed to save outbreak:', err);
+    }
   };
 }
 
